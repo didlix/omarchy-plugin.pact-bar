@@ -63,7 +63,10 @@ reproduced as copy-paste config in
 edits values from scripts.
 
 Colours come from the active theme's `shell.toml` `[pact]` section (see
-The Pact theme for the reference palette) with built-in fallbacks.
+The Pact theme for the reference palette) with built-in fallbacks. The bar
+renders in the system monospace font; if you use IBM 3270 (as The Pact
+recommends), apply the theme README's fontconfig scaling rule (1.45x) so
+the bar, terminals, and the text-size knob stay in proportion.
 
 ## CLI
 
