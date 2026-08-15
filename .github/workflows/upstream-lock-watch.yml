@@ -38,15 +38,11 @@ jobs:
 
           echo "upstream lock changed: $BASELINE -> $LATEST"
           COMPARE="https://github.com/basecamp/omarchy/compare/${BASELINE}...${LATEST}"
+          BODY=$(printf 'Omarchy'"'"'s `shell/plugins/lock` has new commits since the recorded baseline.\n\nReview and re-base the local pact.lock fork:\n%s\n\nBaseline advanced automatically to `%s`.' "$COMPARE" "$LATEST")
           gh issue create \
             --repo "$GITHUB_REPOSITORY" \
             --title "Upstream lock screen changed ($(date -u +%Y-%m-%d))" \
-            --body "Omarchy's \`shell/plugins/lock\` has new commits since the recorded baseline.
-
-Review and re-base the local pact.lock fork:
-${COMPARE}
-
-Baseline advanced automatically to \`${LATEST}\`."
+            --body "$BODY"
 
           echo "$LATEST" > "$BASELINE_FILE"
           git config user.name "github-actions[bot]"
