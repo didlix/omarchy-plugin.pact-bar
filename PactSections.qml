@@ -155,13 +155,13 @@ Item {
           anchors.centerIn: parent
           spacing: Style.space(4)
 
+          // Colour contract (keep consistent everywhere): numbers are ALWAYS
+          // dim-text; names are text, or selected on the focused floor.
+          // Occupancy is deliberately not colour-coded — every scheme that
+          // tried made the grid look patchy.
           Text {
-            // Occupancy lives in the number: bright when the floor has
-            // windows, dim when empty — the name keeps one consistent
-            // colour so the grid never looks patchy.
             text: (cell.wsId < 10 ? "0" : "") + cell.wsId
-            color: cell.focused ? Color.pick("pact.selected", "#c8da7c")
-              : cell.occupied ? Color.pick("pact.text", "#6ac8e8") : Color.pick("pact.dim-text", "#3f6f80")
+            color: Color.pick("pact.dim-text", "#3f6f80")
             font.family: Style.font.family
             font.pixelSize: root.bar.pactMenuSmallFontSize
           }
