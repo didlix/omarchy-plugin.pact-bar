@@ -1,0 +1,5 @@
+#!/bin/bash
+# theme-set hook: swap the bar with the theme (pact.bar on themes that opt
+# in, stock omarchy.bar elsewhere). Install with:
+#   omarchy hook install theme-set ~/.config/omarchy/plugins/pact.bar/bin/pact-theme-hook
+exec "$HOME/.config/omarchy/plugins/pact.bar/bin/pactcli" bar apply

@@ -39,7 +39,7 @@ all the plugin widgets). To swap automatically with your theme, install
 the hook:
 
 ```sh
-omarchy hook install theme-set ~/.config/omarchy/plugins/pact.bar/bin/pact-bar
+omarchy hook install theme-set ~/.config/omarchy/plugins/pact.bar/bin/pact-theme-hook
 ```
 
 Optional keybinding for keyboard control of the bar (arrows/hjkl navigate,

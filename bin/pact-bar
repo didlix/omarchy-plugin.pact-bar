@@ -1,7 +1,0 @@
-#!/bin/bash
-# Compatibility shim: pact-bar predates the `pactcli` CLI. Forwards everything
-# to `pact bar ...` (the theme-set hook and old muscle memory call this).
-case "${1:-status}" in
-  toggle-stock|toggle-pact) exec "$HOME/.config/omarchy/plugins/pact.bar/bin/pactcli" bar toggle ;;
-  *) exec "$HOME/.config/omarchy/plugins/pact.bar/bin/pactcli" bar "$@" ;;
-esac
