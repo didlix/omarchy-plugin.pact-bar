@@ -1,0 +1,56 @@
+name: Upstream lock watch
+
+# The PACT family includes a local fork of Omarchy's lock screen
+# (pact.lock, not published). Because that fork freezes a security
+# surface, this daily check watches upstream's shell/plugins/lock and
+# opens an issue whenever it changes, so the fork gets re-based promptly.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare upstream lock plugin against baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          BASELINE_FILE=.github/upstream/lock-watch.sha
+          BASELINE=$(cat "$BASELINE_FILE")
+          LATEST=$(gh api "repos/basecamp/omarchy/commits?path=shell/plugins/lock&per_page=1" --jq '.[0].sha')
+
+          if [ -z "$LATEST" ]; then
+            echo "could not query upstream; skipping" && exit 0
+          fi
+          if [ "$LATEST" = "$BASELINE" ]; then
+            echo "no upstream lock changes since $BASELINE" && exit 0
+          fi
+
+          echo "upstream lock changed: $BASELINE -> $LATEST"
+          COMPARE="https://github.com/basecamp/omarchy/compare/${BASELINE}...${LATEST}"
+          gh issue create \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Upstream lock screen changed ($(date -u +%Y-%m-%d))" \
+            --body "Omarchy's \`shell/plugins/lock\` has new commits since the recorded baseline.
+
+Review and re-base the local pact.lock fork:
+${COMPARE}
+
+Baseline advanced automatically to \`${LATEST}\`."
+
+          echo "$LATEST" > "$BASELINE_FILE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$BASELINE_FILE"
+          git commit -m "Advance upstream lock-watch baseline to ${LATEST}"
+          git push
