@@ -52,11 +52,15 @@ o.bind("SUPER + SHIFT + T", "Focus PACT bar", "omarchy-shell pact.bar focus")
 ## Configure
 
 User config lives at `~/.config/omarchy/pact/config.toml` (live-reloaded);
-the file documents its own schema. You can rename sections, replace any
-section's submenu with your own entries, define custom state probes from
-any command's exit status, pin the PACT unit (emblem block = band
-thickness), cap the section spread width, and set the counter's label and
-target date. `pactcli config get|set` edits it from scripts.
+the file documents its own schema and every menu item is yours to change —
+top level included. Rename sections, choose how many floors show
+(`[bar] sections`), replace any section's submenu with your own entries,
+define custom state probes from any command's exit status, pin the PACT
+unit (emblem block = band thickness), cap the section spread width, and
+set the counter's label and target date. The complete defaults are
+reproduced as copy-paste config in
+[docs/DEFAULT-MENUS.md](docs/DEFAULT-MENUS.md). `pactcli config get|set`
+edits values from scripts.
 
 Colours come from the active theme's `shell.toml` `[pact]` section (see
 The Pact theme for the reference palette) with built-in fallbacks.

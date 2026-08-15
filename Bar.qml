@@ -1033,15 +1033,17 @@ Item {
     }
     if (!pactFocusMode) return false
     if (k === Qt.Key_Escape) { pactUnfocus(); return true }
-    if (k === Qt.Key_Right || k === Qt.Key_L) { pactFocusIndex = (pactFocusIndex + 2) % 10; return true }
-    if (k === Qt.Key_Left || k === Qt.Key_H) { pactFocusIndex = (pactFocusIndex + 8) % 10; return true }
+    var n = pactSectionCount
+    if (k === Qt.Key_Right || k === Qt.Key_L) { pactFocusIndex = (pactFocusIndex + 2) % n; return true }
+    if (k === Qt.Key_Left || k === Qt.Key_H) { pactFocusIndex = (pactFocusIndex + n - 2 + n % 2) % n; return true }
     if (k === Qt.Key_Up || k === Qt.Key_K || k === Qt.Key_Down || k === Qt.Key_J) {
-      pactFocusIndex = pactFocusIndex % 2 === 0 ? pactFocusIndex + 1 : pactFocusIndex - 1
+      var partner = pactFocusIndex % 2 === 0 ? pactFocusIndex + 1 : pactFocusIndex - 1
+      if (partner < n) pactFocusIndex = partner
       return true
     }
     if (k === Qt.Key_Return || k === Qt.Key_Enter || k === Qt.Key_Space) { pactMenuSel = 0; pactMenuIndex = pactFocusIndex; return true }
-    if (k >= Qt.Key_1 && k <= Qt.Key_9) { pactFocusIndex = k - Qt.Key_1; return true }
-    if (k === Qt.Key_0) { pactFocusIndex = 9; return true }
+    if (k >= Qt.Key_1 && k <= Qt.Key_9) { if (k - Qt.Key_1 < n) pactFocusIndex = k - Qt.Key_1; return true }
+    if (k === Qt.Key_0) { if (n >= 10) pactFocusIndex = 9; return true }
     return false
   }
 
@@ -1090,6 +1092,13 @@ Item {
   // PACT chrome type scale: the section grid, submenus, and wordmark run at
   // 1.2x the system font size (Style tokens track `omarchy display text
   // size`, so this stays anchored to the user's setting).
+  // How many floor sections show (workspaces 1..N), from [bar] sections
+  // in config.toml. Even numbers fill the two-row grid cleanly.
+  readonly property int pactSectionCount: {
+    var n = Math.round(Number(pactConfig.bar ? pactConfig.bar.sections : 0))
+    return n >= 2 && n <= 10 ? n : 10
+  }
+
   // Cap for the section grid's space-between spread; override with
   // [bar] sections-max-width in config.toml.
   readonly property real pactSectionsMaxW: {

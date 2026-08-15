@@ -21,7 +21,7 @@ Item {
   required property QtObject bar
 
   readonly property var config: bar && bar.pactConfig ? bar.pactConfig : ({})
-  readonly property int count: PactModel.sectionCount()
+  readonly property int count: bar && bar.pactSectionCount ? bar.pactSectionCount : PactModel.sectionCount()
 
   // "idle"/"nightlight"/"dnd" -> bool, refreshed when a menu opens and
   // shortly after a stateful entry fires.
@@ -109,11 +109,12 @@ Item {
     spacing: 0
 
     Repeater {
-      model: 5
+      model: Math.ceil(root.count / 2)
 
       RowLayout {
         id: columnHost
         required property int index
+        readonly property int columns: Math.ceil(root.count / 2)
         spacing: 0
         Layout.fillHeight: true
 
@@ -121,12 +122,12 @@ Item {
           spacing: Style.space(2)
           Layout.alignment: Qt.AlignVCenter
 
-          SectionCell { index: columnHost.index * 2 }
-          SectionCell { index: columnHost.index * 2 + 1 }
+          SectionCell { index: columnHost.index * 2; visible: index < root.count }
+          SectionCell { index: columnHost.index * 2 + 1; visible: index < root.count }
         }
 
         Item {
-          visible: columnHost.index < 4
+          visible: columnHost.index < columnHost.columns - 1
           Layout.fillWidth: true
           Layout.minimumWidth: Style.space(12)
         }
