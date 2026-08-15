@@ -9,6 +9,7 @@ kept first), and `[section.N] name` renames the floor.
 ```toml
 [bar]
 sections = 10          # floors shown (workspaces 1..N)
+font-scale = 1.4       # chrome text as a multiple of the system font size
 
 [section.1]
 name = "SERVICES"

@@ -1090,8 +1090,9 @@ Item {
   }
 
   // PACT chrome type scale: the section grid, submenus, and wordmark run at
-  // 1.2x the system font size (Style tokens track `omarchy display text
-  // size`, so this stays anchored to the user's setting).
+  // pactFontScale times the system font size (Style tokens track `omarchy
+  // display text size`, so it stays anchored to the user's setting).
+  // Override with [bar] font-scale in config.toml.
   // How many floor sections show (workspaces 1..N), from [bar] sections
   // in config.toml. Even numbers fill the two-row grid cleanly.
   readonly property int pactSectionCount: {
@@ -1105,9 +1106,13 @@ Item {
     var pinned = Number(pactConfig.bar ? pactConfig.bar["sections-max-width"] : 0)
     return pinned > 0 ? pinned : Style.space(1050)
   }
-  readonly property int pactMenuFontSize: Math.round(Style.font.body * 1.2)
-  readonly property int pactMenuSmallFontSize: Math.round(Style.font.bodySmall * 1.2)
-  readonly property int pactWordmarkSize: Math.round(Style.font.heading * 1.2)
+  readonly property real pactFontScale: {
+    var pinned = Number(pactConfig.bar ? pactConfig.bar["font-scale"] : 0)
+    return pinned > 0 ? pinned : 1.4
+  }
+  readonly property int pactMenuFontSize: Math.round(Style.font.body * pactFontScale)
+  readonly property int pactMenuSmallFontSize: Math.round(Style.font.bodySmall * pactFontScale)
+  readonly property int pactWordmarkSize: Math.round(Style.font.heading * pactFontScale)
   readonly property real pactBandH: pactUnit
   // One alignment line for the whole frame (design rule): the yellow
   // bands' ends align with the cyan borders of the leftmost and rightmost

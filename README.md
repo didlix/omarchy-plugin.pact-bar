@@ -54,7 +54,8 @@ o.bind("SUPER + SHIFT + T", "Focus PACT bar", "omarchy-shell pact.bar focus")
 User config lives at `~/.config/omarchy/pact/config.toml` (live-reloaded);
 the file documents its own schema and every menu item is yours to change —
 top level included. Rename sections, choose how many floors show
-(`[bar] sections`), replace any section's submenu with your own entries,
+(`[bar] sections`), scale the chrome text (`[bar] font-scale`, default
+1.4x the system font), replace any section's submenu with your own entries,
 define custom state probes from any command's exit status, pin the PACT
 unit (emblem block = band thickness), cap the section spread width, and
 set the counter's label and target date. The complete defaults are
