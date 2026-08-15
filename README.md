@@ -71,12 +71,19 @@ the bar, terminals, and the text-size knob stay in proportion.
 ## CLI
 
 ```
+pactcli status                       whole-family overview
 pactcli bar on|off|toggle|status|apply
+pactcli clock on|off|status          swap the stock bar's clock to pact.clock
+pactcli lock on|off|status           enable the pact.lock lock screen
 pactcli window status|counter|emergency|close
 pactcli menu <1-10>
 pactcli focus
 pactcli config get|set <section.key> [value]
 ```
+
+`clock` and `lock` drive the sibling plugins when installed (e.g.
+[pact.clock](https://github.com/didlix/omarchy-plugin.pact-clock)) and
+explain where to get them when not.
 
 ## Provenance
 

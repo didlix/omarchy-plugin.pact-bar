@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""pactcli — CLI for the pact.bar Omarchy plugin.
+"""pactcli — CLI for the PACT plugin family.
 
+  pactcli status                  overview of every PACT plugin's state
   pactcli bar on|off|toggle       swap between the PACT bar and the stock bar
   pactcli bar status              show preference, theme, and the active bar
   pactcli bar apply               re-assert for the current theme (theme-set hook)
+  pactcli clock on|off|status     swap the stock bar's clock to/from pact.clock
+  pactcli lock on|off|status      enable/disable the pact.lock lock screen
   pactcli window status|counter|emergency|close    open/close a PACT window
   pactcli menu <1-10>             open a section submenu
   pactcli focus                   toggle bar keyboard-focus mode
@@ -13,6 +16,8 @@
 Config: ~/.config/omarchy/pact/config.toml (live-reloaded by the bar).
 The bar swap preference is [bar] replace; only one bar can occupy the
 shell's bar slot, and whichever bar is active hosts all plugin widgets.
+clock/lock only act when the matching plugin is installed under
+~/.config/omarchy/plugins/.
 """
 import json, os, re, subprocess, sys
 
@@ -121,11 +126,113 @@ def shell_ipc(*args):
     subprocess.run(["omarchy-shell", "pact.bar", *args], check=False)
 
 
+def plugin_installed(plugin_id):
+    return os.path.isdir(f"{HOME}/.config/omarchy/plugins/{plugin_id}")
+
+
+def require_plugin(plugin_id):
+    if not plugin_installed(plugin_id):
+        sys.exit(f"{plugin_id} is not installed — clone "
+                 f"https://github.com/didlix/omarchy-plugin.{plugin_id.replace('.', '-')} "
+                 f"into ~/.config/omarchy/plugins/{plugin_id}")
+
+
+def clock_state(config):
+    for section in ("left", "center", "right"):
+        for entry in config.get("bar", {}).get("layout", {}).get(section, []):
+            if isinstance(entry, dict) and entry.get("id") in ("pact.clock", "omarchy.clock"):
+                return entry["id"]
+    return None
+
+
+def clock_swap(want_pact):
+    require_plugin("pact.clock")
+    target = "pact.clock" if want_pact else "omarchy.clock"
+    other = "omarchy.clock" if want_pact else "pact.clock"
+    with open(SHELL_JSON) as f:
+        config = json.load(f)
+    changed = False
+    for section in ("left", "center", "right"):
+        for entry in config.get("bar", {}).get("layout", {}).get(section, []):
+            if isinstance(entry, dict) and entry.get("id") == other:
+                entry["id"] = target
+                changed = True
+    if config.get("bar", {}).get("centerAnchor") == other:
+        config["bar"]["centerAnchor"] = target
+        changed = True
+    if changed:
+        with open(SHELL_JSON, "w") as f:
+            json.dump(config, f, indent=2)
+            f.write("\n")
+    print("clock:", target, "" if changed else "(already)")
+
+
+def lock_state(config):
+    plugins = [p.get("id") for p in config.get("plugins", []) if isinstance(p, dict)]
+    return "pact.lock" if "pact.lock" in plugins else "omarchy.lock"
+
+
+def lock_swap(want_pact):
+    require_plugin("pact.lock")
+    with open(SHELL_JSON) as f:
+        config = json.load(f)
+    plugins = config.setdefault("plugins", [])
+    disabled = config.setdefault("disabledPlugins", [])
+    have = any(isinstance(p, dict) and p.get("id") == "pact.lock" for p in plugins)
+    if want_pact and not have:
+        plugins.append({"id": "pact.lock"})
+        if "omarchy.lock" not in disabled:
+            disabled.append("omarchy.lock")
+    elif not want_pact and have:
+        config["plugins"] = [p for p in plugins
+                             if not (isinstance(p, dict) and p.get("id") == "pact.lock")]
+        config["disabledPlugins"] = [d for d in disabled if d != "omarchy.lock"]
+    else:
+        print("lock:", "pact.lock" if want_pact else "omarchy.lock", "(already)")
+        return
+    with open(SHELL_JSON, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+    print("lock:", "pact.lock" if want_pact else "omarchy.lock")
+
+
 def main():
     args = sys.argv[1:]
     cmd = args[0] if args else "help"
 
-    if cmd == "bar":
+    if cmd == "status":
+        with open(SHELL_JSON) as f:
+            config = json.load(f)
+        active = config.get("bar", {}).get("id", STOCK_BAR)
+        print(f"theme:  {current_theme()}\n"
+              f"bar:    {active}  (preference: replace = {bar_pref()})\n"
+              f"clock:  {clock_state(config) or 'none in layout'}"
+              + ("" if plugin_installed("pact.clock") else "  [pact.clock not installed]") + "\n"
+              f"lock:   {lock_state(config)}"
+              + ("" if plugin_installed("pact.lock") else "  [pact.lock not installed]"))
+    elif cmd == "clock":
+        sub = args[1] if len(args) > 1 else "status"
+        if sub == "on":
+            clock_swap(True)
+        elif sub == "off":
+            clock_swap(False)
+        elif sub == "status":
+            with open(SHELL_JSON) as f:
+                print("clock:", clock_state(json.load(f)) or "none in layout")
+        else:
+            sys.exit("usage: pactcli clock on|off|status")
+    elif cmd == "lock":
+        sub = args[1] if len(args) > 1 else "status"
+        if sub == "on":
+            lock_swap(True)
+        elif sub == "off":
+            lock_swap(False)
+        elif sub == "status":
+            with open(SHELL_JSON) as f:
+                print("lock:", lock_state(json.load(f)))
+        else:
+            sys.exit("usage: pactcli lock on|off|status")
+    elif cmd == "bar":
         sub = args[1] if len(args) > 1 else "status"
         if sub in ("on", "off"):
             config_set("bar.replace", sub); bar_apply()
