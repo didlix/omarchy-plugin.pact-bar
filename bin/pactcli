@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+"""pactcli — CLI for the pact.bar Omarchy plugin.
+
+  pactcli bar on|off|toggle       swap between the PACT bar and the stock bar
+  pactcli bar status              show preference, theme, and the active bar
+  pactcli bar apply               re-assert for the current theme (theme-set hook)
+  pactcli window status|counter|emergency|close    open/close a PACT window
+  pactcli menu <1-10>             open a section submenu
+  pactcli focus                   toggle bar keyboard-focus mode
+  pactcli config get <key>        read a config value (dotted key, e.g. bar.unit)
+  pactcli config set <key> <val>  write a config value
+
+Config: ~/.config/omarchy/pact/config.toml (live-reloaded by the bar).
+The bar swap preference is [bar] replace; only one bar can occupy the
+shell's bar slot, and whichever bar is active hosts all plugin widgets.
+"""
+import json, os, re, subprocess, sys
+
+HOME = os.path.expanduser("~")
+SHELL_JSON = f"{HOME}/.config/omarchy/shell.json"
+CONFIG = f"{HOME}/.config/omarchy/pact/config.toml"
+PACT_BAR = "pact.bar"
+STOCK_BAR = "omarchy.bar"
+
+
+def current_theme():
+    try:
+        name = open(f"{HOME}/.local/state/omarchy/current/theme.name").read()
+        return name.strip().lower().replace(" ", "-")
+    except OSError:
+        return ""
+
+
+def read_config():
+    try:
+        return open(CONFIG).read()
+    except FileNotFoundError:
+        return ""
+
+
+def config_get(dotted, default=None):
+    parts = dotted.split(".", 1)
+    if len(parts) != 2:
+        return default
+    section, key = parts
+    m = re.search(
+        rf"^\[{re.escape(section)}\][^\[]*?^\s*{re.escape(key)}\s*=\s*(.+?)\s*$",
+        read_config(), re.M | re.S)
+    if not m:
+        return default
+    raw = m.group(1)
+    raw = re.sub(r"\s+#.*$", "", raw).strip()
+    if raw.startswith('"') and raw.endswith('"'):
+        return raw[1:-1]
+    return raw
+
+
+def config_set(dotted, value):
+    parts = dotted.split(".", 1)
+    if len(parts) != 2:
+        sys.exit(f"key must be section.key, got: {dotted}")
+    section, key = parts
+    if re.fullmatch(r"-?\d+(\.\d+)?|true|false", value):
+        rendered = value
+    else:
+        rendered = '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    text = read_config()
+    sec_pat = rf"^\[{re.escape(section)}\]"
+    if re.search(sec_pat, text, re.M):
+        key_pat = rf"(^\[{re.escape(section)}\][^\[]*?^(\s*){re.escape(key)}\s*=\s*).+?$"
+        if re.search(key_pat, text, re.M | re.S):
+            text = re.sub(key_pat, rf"\g<1>{rendered}", text,
+                          count=1, flags=re.M | re.S)
+        else:
+            text = re.sub(rf"({sec_pat}\s*\n)", rf"\g<1>{key} = {rendered}\n",
+                          text, count=1, flags=re.M)
+    else:
+        text = text.rstrip("\n") + f"\n\n[{section}]\n{key} = {rendered}\n"
+    os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
+    open(CONFIG, "w").write(text)
+
+
+def set_slot_bar(bar_id):
+    with open(SHELL_JSON) as f:
+        config = json.load(f)
+    bar = config.setdefault("bar", {})
+    if bar.get("id", STOCK_BAR) != bar_id:
+        if bar_id == STOCK_BAR:
+            bar.pop("id", None)
+        else:
+            bar["id"] = bar_id
+        with open(SHELL_JSON, "w") as f:
+            json.dump(config, f, indent=2)
+            f.write("\n")
+
+
+def bar_pref():
+    value = config_get("bar.replace")
+    if value is None:
+        # Legacy location: [pact] replace-bar in the user shell.toml.
+        m = re.search(r"^\[pact\][^\[]*?^replace-bar\s*=\s*\"?(\w+)\"?",
+                      _read(f"{HOME}/.config/omarchy/shell.toml"), re.M | re.S)
+        value = m.group(1) if m else "on"
+    return value
+
+
+def _read(path):
+    try:
+        return open(path).read()
+    except FileNotFoundError:
+        return ""
+
+
+def bar_apply():
+    want_pact = bar_pref() != "off" and current_theme() == "silo"
+    set_slot_bar(PACT_BAR if want_pact else STOCK_BAR)
+    print("bar:", PACT_BAR if want_pact else STOCK_BAR)
+
+
+def shell_ipc(*args):
+    subprocess.run(["omarchy-shell", "pact.bar", *args], check=False)
+
+
+def main():
+    args = sys.argv[1:]
+    cmd = args[0] if args else "help"
+
+    if cmd == "bar":
+        sub = args[1] if len(args) > 1 else "status"
+        if sub in ("on", "off"):
+            config_set("bar.replace", sub); bar_apply()
+        elif sub == "toggle":
+            config_set("bar.replace", "off" if bar_pref() != "off" else "on")
+            bar_apply()
+        elif sub == "apply":
+            bar_apply()
+        elif sub == "status":
+            with open(SHELL_JSON) as f:
+                active = json.load(f).get("bar", {}).get("id", STOCK_BAR)
+            print(f"preference: bar.replace = {bar_pref()}\n"
+                  f"theme: {current_theme()}\nactive bar: {active}")
+        else:
+            sys.exit(__doc__.strip())
+    elif cmd == "window":
+        key = args[1] if len(args) > 1 else ""
+        if key == "close":
+            shell_ipc("closeWindow")
+        elif key in ("status", "counter", "emergency"):
+            shell_ipc("openWindow", key)
+        else:
+            sys.exit("usage: pactcli window status|counter|emergency|close")
+    elif cmd == "menu":
+        if len(args) < 2 or not args[1].isdigit():
+            sys.exit("usage: pactcli menu <1-10>")
+        shell_ipc("openMenu", args[1])
+    elif cmd == "focus":
+        shell_ipc("focus")
+    elif cmd == "config":
+        sub = args[1] if len(args) > 1 else ""
+        if sub == "get" and len(args) == 3:
+            value = config_get(args[2])
+            print("" if value is None else value)
+        elif sub == "set" and len(args) == 4:
+            config_set(args[2], args[3])
+        else:
+            sys.exit("usage: pactcli config get <section.key> | set <section.key> <value>")
+    else:
+        print(__doc__.strip())
+        sys.exit(0 if cmd in ("help", "-h", "--help") else 2)
+
+
+if __name__ == "__main__":
+    main()

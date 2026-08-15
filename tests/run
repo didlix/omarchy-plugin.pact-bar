@@ -1,0 +1,23 @@
+#!/bin/bash
+# Test suite: pure-JS logic under node (the QML layers need a live
+# Quickshell, so CI covers the parser, the menu model, and the CLI).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "== Toml.js + PactModel.js unit tests"
+node tests/logic.test.js
+
+echo "== pactcli compiles"
+python3 -m py_compile bin/pactcli
+
+echo "== manifest is valid JSON with required fields"
+python3 - <<'EOF'
+import json
+m = json.load(open("manifest.json"))
+assert m["id"] == "pact.bar", m["id"]
+assert "bar" in m["kinds"]
+assert m["entryPoints"]["bar"] == "Bar.qml"
+print("manifest ok")
+EOF
+
+echo "ALL PASS"
