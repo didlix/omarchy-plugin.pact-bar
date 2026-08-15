@@ -10,6 +10,7 @@ kept first), and `[section.N] name` renames the floor.
 [bar]
 sections = 10          # floors shown (workspaces 1..N)
 font-scale = 1.4       # chrome text as a multiple of the system font size
+dock-scale = 1.2       # plugin dock widgets render at this multiple
 
 [section.1]
 name = "SERVICES"

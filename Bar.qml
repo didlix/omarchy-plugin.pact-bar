@@ -1130,8 +1130,15 @@ Item {
   // baseline padding and band clearance — bands never encroach on content.
   readonly property real pactHeaderContentH: Math.round(2 * (pactMenuFontSize + Style.space(6)) + Style.space(4))
   readonly property real pactHeaderH: Math.round(pactHeaderContentH + pactPad * 2 + pactUnit * 1.5)
+  // Plugin dock scale: the widget rows render at this multiple of their
+  // natural size (glyphs and click targets grow together). Override with
+  // [bar] dock-scale in config.toml.
+  readonly property real pactDockScale: {
+    var pinned = Number(pactConfig.bar ? pactConfig.bar["dock-scale"] : 0)
+    return pinned > 0 ? pinned : 1.2
+  }
   readonly property real pactBoxRowSize: Style.space(26)
-  readonly property real pactRow2H: Math.round(pactBoxRowSize + pactPad * 2 + Style.space(4) + pactUnit)
+  readonly property real pactRow2H: Math.round(pactBoxRowSize * pactDockScale + pactPad * 2 + Style.space(4) + pactUnit)
   readonly property real pactTotalH: pactHeaderH + pactRow2H
 
   readonly property QtObject pactMiniBar: QtObject {
@@ -1475,20 +1482,27 @@ Item {
             id: dockLeftBox
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: dockLeftList.implicitWidth + Style.space(12)
-            height: root.pactBoxRowSize + Style.space(4)
+            width: dockLeftList.implicitWidth * root.pactDockScale + Style.space(12)
+            height: root.pactBoxRowSize * root.pactDockScale + Style.space(4)
             color: "transparent"
             border.width: 1
             border.color: Color.pick("pact.frame", "#4fb8d8")
 
-            ModuleList {
-              id: dockLeftList
+            Item {
               anchors.left: parent.left
               anchors.leftMargin: Style.space(6)
               anchors.verticalCenter: parent.verticalCenter
-              entries: root.pactDockLeft
-              region: "center"
-              barOverride: root.pactMiniBar
+              width: dockLeftList.implicitWidth * root.pactDockScale
+              height: dockLeftList.implicitHeight * root.pactDockScale
+
+              ModuleList {
+                id: dockLeftList
+                anchors.centerIn: parent
+                scale: root.pactDockScale
+                entries: root.pactDockLeft
+                region: "center"
+                barOverride: root.pactMiniBar
+              }
             }
           }
 
@@ -1497,19 +1511,26 @@ Item {
             anchors.leftMargin: root.pactPad
             anchors.verticalCenter: parent.verticalCenter
             width: pactDockRow.expandW
-            height: root.pactBoxRowSize + Style.space(4)
+            height: root.pactBoxRowSize * root.pactDockScale + Style.space(4)
             color: "transparent"
             border.width: 1
             border.color: Color.pick("pact.frame", "#4fb8d8")
 
-            ModuleList {
-              id: dockCenterList
+            Item {
               anchors.left: parent.left
               anchors.leftMargin: Style.space(6)
               anchors.verticalCenter: parent.verticalCenter
-              entries: root.pactDockCenter
-              region: "center"
-              barOverride: root.pactMiniBar
+              width: dockCenterList.implicitWidth * root.pactDockScale
+              height: dockCenterList.implicitHeight * root.pactDockScale
+
+              ModuleList {
+                id: dockCenterList
+                anchors.centerIn: parent
+                scale: root.pactDockScale
+                entries: root.pactDockCenter
+                region: "center"
+                barOverride: root.pactMiniBar
+              }
             }
           }
 
@@ -1517,19 +1538,26 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             width: pactDockRow.expandW
-            height: root.pactBoxRowSize + Style.space(4)
+            height: root.pactBoxRowSize * root.pactDockScale + Style.space(4)
             color: "transparent"
             border.width: 1
             border.color: Color.pick("pact.frame", "#4fb8d8")
 
-            ModuleList {
-              id: dockRightList
+            Item {
               anchors.right: parent.right
               anchors.rightMargin: Style.space(6)
               anchors.verticalCenter: parent.verticalCenter
-              entries: root.pactDockRight
-              region: "right"
-              barOverride: root.pactMiniBar
+              width: dockRightList.implicitWidth * root.pactDockScale
+              height: dockRightList.implicitHeight * root.pactDockScale
+
+              ModuleList {
+                id: dockRightList
+                anchors.centerIn: parent
+                scale: root.pactDockScale
+                entries: root.pactDockRight
+                region: "right"
+                barOverride: root.pactMiniBar
+              }
             }
           }
         }
